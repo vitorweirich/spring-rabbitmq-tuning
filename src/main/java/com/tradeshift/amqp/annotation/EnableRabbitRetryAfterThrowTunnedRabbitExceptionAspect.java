@@ -38,7 +38,7 @@ public class EnableRabbitRetryAfterThrowTunnedRabbitExceptionAspect {
     @AfterThrowing(
     	    pointcut="com.tradeshift.amqp.annotation.CommonJoinPointConfig.enableRabbitRetryAfterThrowTunnedRabbitException()",
     	    throwing="tunnedEx")
-    public void retryOrDlqAfterTwrow(JoinPoint joinPoint, TunnedRabbitException tunnedEx) throws Throwable {
+    public void retryOrDlqAfterTwrow(JoinPoint joinPoint, TunedRabbitException tunnedEx) throws Throwable {
         Method method = getMethod(joinPoint);
         EnableRabbitRetryAfterThrowTunnedRabbitException annotation = method.getAnnotation(EnableRabbitRetryAfterThrowTunnedRabbitException.class);
         TunedRabbitProperties properties = getPropertiesByAnnotationEvent(annotation);
