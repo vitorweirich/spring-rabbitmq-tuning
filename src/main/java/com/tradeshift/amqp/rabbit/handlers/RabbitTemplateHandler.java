@@ -34,7 +34,7 @@ public class RabbitTemplateHandler {
     public RabbitTemplate getRabbitTemplate(String eventName) {
         TunedRabbitProperties customRabbitProperties = rabbitCustomPropertiesMap.get(eventName);
         if (Objects.isNull(customRabbitProperties)) {
-            throw new NoSuchBeanDefinitionException("No bean available for property " + eventName);
+            throw new NoSuchBeanDefinitionException(eventName);
         }
         return getRabbitTemplate(customRabbitProperties);
     }
@@ -44,7 +44,7 @@ public class RabbitTemplateHandler {
         if (Objects.nonNull(property) && !Boolean.getBoolean(property)) {
             Map<String, RabbitTemplate> beansOfType = context.getBeansOfType(RabbitTemplate.class);
             if (beansOfType.size() == 0) {
-                throw new NoSuchBeanDefinitionException("No RabbitTemplate bean available. Are you sure that you want to disable the autoconfiguration?");
+                throw new NoSuchBeanDefinitionException(customRabbitProperties.getEventName(), "No RabbitTemplate bean available. Are you sure that you want to disable the autoconfiguration?");
             } else if (beansOfType.size() > 1) {
                 if (StringUtils.isEmpty(customRabbitProperties.getRabbitTemplateBeanName())) {
                     throw new BeanDefinitionValidationException("There are more than 1 RabbitTemplate available. You need to specify the name of the RabbitTemplate that we will use for this event");

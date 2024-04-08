@@ -27,7 +27,7 @@ public class TunedRabbitListener implements RabbitListener {
     private String messageConverter = "";
     private String converterWinsContentType = "";
     private String replyContentType = "";
-
+    private String batch = "";
 
     public TunedRabbitListener(RabbitListener rabbitListener) {
         this.id = rabbitListener.id();
@@ -45,6 +45,7 @@ public class TunedRabbitListener implements RabbitListener {
         this.autoStartup = rabbitListener.autoStartup();
         this.executor = rabbitListener.executor();
         this.ackMode = rabbitListener.ackMode();
+        this.batch = rabbitListener.batch();
     }
 
     @Override
@@ -150,4 +151,9 @@ public class TunedRabbitListener implements RabbitListener {
     public void setContainerFactory(String containerFactory) {
         this.containerFactory = containerFactory;
     }
+
+	@Override
+	public String batch() {
+		return this.batch;
+	}
 }

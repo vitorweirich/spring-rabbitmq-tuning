@@ -3,7 +3,8 @@ package com.tradeshift.amqp.autoconfigure;
 import static java.util.stream.Collectors.toList;
 import static org.hamcrest.CoreMatchers.hasItems;
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
@@ -15,9 +16,9 @@ import static org.mockito.MockitoAnnotations.initMocks;
 
 import java.util.List;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.springframework.amqp.core.Exchange;
 import org.springframework.amqp.core.Queue;
@@ -27,15 +28,15 @@ import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.context.support.GenericApplicationContext;
 import org.springframework.test.annotation.DirtiesContext;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import com.tradeshift.amqp.rabbit.components.RabbitComponentsFactory;
 import com.tradeshift.amqp.rabbit.properties.TunedRabbitProperties;
 import com.tradeshift.amqp.rabbit.properties.TunedRabbitPropertiesMap;
 
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
-public class TunedRabbitAutoConfigurationBingindTest {
+class TunedRabbitAutoConfigurationBingindTest {
 
 	private TunedRabbitAutoConfiguration tradeshiftRabbitAutoConfiguration;
 	
@@ -50,8 +51,8 @@ public class TunedRabbitAutoConfigurationBingindTest {
 
 	private RabbitAdmin rabbitAdmin;
     
-    @Before
-    public void setup() {
+    @BeforeEach
+    void setup() {
         initMocks(this);
         tradeshiftRabbitAutoConfiguration = spy(new TunedRabbitAutoConfiguration(context, beanFactory));
         
@@ -62,7 +63,7 @@ public class TunedRabbitAutoConfigurationBingindTest {
     }
     
     @Test
-    public void should_create_binding_for_one_event() {
+    void should_create_binding_for_one_event() {
     	
     	TunedRabbitPropertiesMap rabbitCustomPropertiesMap = new TunedRabbitPropertiesMap();
     	TunedRabbitProperties eventProperties = createQueuePropertiesWithAutoCreate(true);
@@ -73,7 +74,7 @@ public class TunedRabbitAutoConfigurationBingindTest {
     	// Validate the single exchange
     	ArgumentCaptor<Exchange> exchangeArgumentCaptor = ArgumentCaptor.forClass(Exchange.class);
     	verify(rabbitAdmin).declareExchange(exchangeArgumentCaptor.capture());
-    	assertThat(exchangeArgumentCaptor.getValue().getName(), is("ex.test"));
+    	assertEquals("ex.test", exchangeArgumentCaptor.getValue().getName());
 
     	// Validate all the queues
     	ArgumentCaptor<Queue> queueArgumentCaptor = ArgumentCaptor.forClass(Queue.class);
@@ -81,11 +82,14 @@ public class TunedRabbitAutoConfigurationBingindTest {
     	List<String> queuesNames = queueArgumentCaptor.getAllValues().stream()
     			.map(Queue::getName)
     			.collect(toList());
-    	assertThat(queuesNames, hasItems("queue.test", "queue.test.dlq", "queue.test.retry"));
+    	
+    	assertTrue(queuesNames.contains("queue.test"));
+    	assertTrue(queuesNames.contains("queue.test.dlq"));
+    	assertTrue(queuesNames.contains("queue.test.retry"));
     }
     
     @Test
-    public void should_not_create_binding_for_retry_and_dlq_when_disabled() {
+    void should_not_create_binding_for_retry_and_dlq_when_disabled() {
     	
     	TunedRabbitPropertiesMap rabbitCustomPropertiesMap = new TunedRabbitPropertiesMap();
     	TunedRabbitProperties eventProperties = createQueuePropertiesWithAutoCreate(true);
@@ -97,16 +101,16 @@ public class TunedRabbitAutoConfigurationBingindTest {
     	// Validate the single exchange
     	ArgumentCaptor<Exchange> exchangeArgumentCaptor = ArgumentCaptor.forClass(Exchange.class);
     	verify(rabbitAdmin).declareExchange(exchangeArgumentCaptor.capture());
-    	assertThat(exchangeArgumentCaptor.getValue().getName(), is("ex.test"));
+    	assertEquals("ex.test", exchangeArgumentCaptor.getValue().getName());
 
     	// Validate all the queues
     	ArgumentCaptor<Queue> queueArgumentCaptor = ArgumentCaptor.forClass(Queue.class);
     	verify(rabbitAdmin).declareQueue(queueArgumentCaptor.capture());
-    	assertThat(queueArgumentCaptor.getValue().getName(), is("queue.test"));
+    	assertEquals("queue.test", queueArgumentCaptor.getValue().getName());
     }
 
     @Test
-    public void should_create_binding_for_events_with_same_host_port_and_virtualhost() {
+    void should_create_binding_for_events_with_same_host_port_and_virtualhost() {
 
     	TunedRabbitPropertiesMap rabbitCustomPropertiesMap = new TunedRabbitPropertiesMap();
     	TunedRabbitProperties eventProperties = createQueuePropertiesWithAutoCreate(true);
@@ -125,15 +129,20 @@ public class TunedRabbitAutoConfigurationBingindTest {
     	List<String> exchangesNames = exchangeArgumentCaptor.getAllValues().stream()
     			.map(Exchange::getName)
     			.collect(toList());
-    	assertThat(exchangesNames, hasItems("ex.test", "exchange2.test"));
+    	assertTrue(exchangesNames.contains("ex.test"));
+    	assertTrue(exchangesNames.contains("exchange2.test"));
 
     	ArgumentCaptor<Queue> queueArgumentCaptor = ArgumentCaptor.forClass(Queue.class);
     	verify(rabbitAdmin, times(6)).declareQueue(queueArgumentCaptor.capture());
     	List<String> queuesNames = queueArgumentCaptor.getAllValues().stream()
     			.map(Queue::getName)
     			.collect(toList());
-    	assertThat(queuesNames, hasItems("queue.test", "queue.test.dlq", "queue.test.retry",
-    			"queue2.test", "queue2.test.dlq", "queue2.test.retry"));
+    	assertTrue(queuesNames.contains("queue.test"));
+    	assertTrue(queuesNames.contains("queue.test.dlq"));
+    	assertTrue(queuesNames.contains("queue.test.retry"));
+    	assertTrue(queuesNames.contains("queue2.test"));
+    	assertTrue(queuesNames.contains("queue2.test.dlq"));
+    	assertTrue(queuesNames.contains("queue2.test.retry"));
     }
     
     private TunedRabbitProperties createQueuePropertiesWithAutoCreate(boolean primary) {

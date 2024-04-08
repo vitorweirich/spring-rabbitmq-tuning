@@ -27,7 +27,7 @@ public class RabbitAdminHandler {
     public RabbitAdmin getRabbitAdmin(String eventName) {
         TunedRabbitProperties customRabbitProperties = rabbitCustomPropertiesMap.get(eventName);
         if (Objects.isNull(customRabbitProperties)) {
-            throw new NoSuchBeanDefinitionException("No bean available for property " + eventName);
+            throw new NoSuchBeanDefinitionException(eventName);
         }
         return getRabbitAdmin(customRabbitProperties);
     }

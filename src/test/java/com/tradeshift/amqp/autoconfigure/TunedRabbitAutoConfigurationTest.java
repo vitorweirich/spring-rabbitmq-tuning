@@ -1,25 +1,21 @@
 package com.tradeshift.amqp.autoconfigure;
 
 import static java.util.stream.Collectors.toList;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
-import static org.mockito.MockitoAnnotations.initMocks;
 
 import java.lang.reflect.Field;
 import java.util.List;
-import java.util.stream.Stream;
 
-import org.hamcrest.Matchers;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory;
 import org.springframework.amqp.rabbit.connection.AbstractConnectionFactory;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
@@ -32,16 +28,16 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.context.support.GenericApplicationContext;
 import org.springframework.test.annotation.DirtiesContext;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import com.rabbitmq.client.Address;
 import com.tradeshift.amqp.rabbit.properties.TunedRabbitProperties;
 import com.tradeshift.amqp.rabbit.properties.TunedRabbitPropertiesMap;
 import com.tradeshift.amqp.resolvers.RabbitBeanNameResolver;
 
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
-public class TunedRabbitAutoConfigurationTest {
+class TunedRabbitAutoConfigurationTest {
 
     private TunedRabbitAutoConfiguration tradeshiftRabbitAutoConfiguration;
 
@@ -51,17 +47,14 @@ public class TunedRabbitAutoConfigurationTest {
     @Autowired
     private ConfigurableListableBeanFactory beanFactory;
     
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
 
-    @Before
-    public void setup() {
-        initMocks(this);
+    @BeforeEach
+    void setup() {
         tradeshiftRabbitAutoConfiguration = new TunedRabbitAutoConfiguration(context, beanFactory);
     }
 
     @Test
-    public void should_create_all_beans_for_rabbitmq_architecture() {
+    void should_create_all_beans_for_rabbitmq_architecture() {
 
         TunedRabbitPropertiesMap rabbitCustomPropertiesMap = new TunedRabbitPropertiesMap();
         TunedRabbitProperties queueProperties = createQueueProperties(true);
@@ -92,7 +85,7 @@ public class TunedRabbitAutoConfigurationTest {
     }
 
     @Test
-    public void should_create_all_beans_for_rabbitmq_architecture_using_json_message_converter() throws IllegalAccessException {
+    void should_create_all_beans_for_rabbitmq_architecture_using_json_message_converter() throws IllegalAccessException {
         TunedRabbitPropertiesMap rabbitCustomPropertiesMap = new TunedRabbitPropertiesMap();
         TunedRabbitProperties queueProperties = createQueueProperties(true, null, true);
         rabbitCustomPropertiesMap.put("some-event", queueProperties);
@@ -115,7 +108,7 @@ public class TunedRabbitAutoConfigurationTest {
     }
 
     @Test
-    public void should_create_all_beans_for_rabbitmq_architecture_using_default_message_converter() throws IllegalAccessException {
+    void should_create_all_beans_for_rabbitmq_architecture_using_default_message_converter() throws IllegalAccessException {
 
         TunedRabbitPropertiesMap rabbitCustomPropertiesMap = new TunedRabbitPropertiesMap();
         TunedRabbitProperties queueProperties = createQueueProperties(true);
@@ -139,20 +132,19 @@ public class TunedRabbitAutoConfigurationTest {
     }
 
     @Test
-    public void should_return_an_excp_because_there_are_2_primaries_definitions() {
-
-        expectedException.expect(IllegalArgumentException.class);
-        expectedException.expectMessage("Only one primary RabbitMQ architecture is allowed!");
+    void should_return_an_excp_because_there_are_2_primaries_definitions() {
 
         TunedRabbitPropertiesMap rabbitCustomPropertiesMap = new TunedRabbitPropertiesMap();
         rabbitCustomPropertiesMap.put("some-event", createQueueProperties(true));
         rabbitCustomPropertiesMap.put("some-event2", createQueueProperties(true));
 
-        tradeshiftRabbitAutoConfiguration.routingConnectionFactory(rabbitCustomPropertiesMap);
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () -> tradeshiftRabbitAutoConfiguration.routingConnectionFactory(rabbitCustomPropertiesMap));
+    
+        assertEquals("Only one primary RabbitMQ architecture is allowed!", ex.getMessage());
     }
 
     @Test
-    public void should_create_2_connectionFactories_and_all_other_beans_for_different_hosts_different_port_and_different_virtual_host() {
+    void should_create_2_connectionFactories_and_all_other_beans_for_different_hosts_different_port_and_different_virtual_host() {
 
         String anotherVirtualHost = "test";
         String anotherUsername = "anotherUsername";
@@ -198,7 +190,7 @@ public class TunedRabbitAutoConfigurationTest {
     }
 
     @Test
-    public void should_create_2_connectionFactories_and_all_other_beans_for_different_hosts_same_port_and_different_virtual_host() {
+    void should_create_2_connectionFactories_and_all_other_beans_for_different_hosts_same_port_and_different_virtual_host() {
 
         String anotherVirtualHost = "test";
         String anotherUsername = "anotherUsername";
@@ -244,7 +236,7 @@ public class TunedRabbitAutoConfigurationTest {
     }
 
     @Test
-    public void should_create_2_connectionFactories_and_all_other_beans_for_same_hosts_different_port_and_different_virtual_host() {
+    void should_create_2_connectionFactories_and_all_other_beans_for_same_hosts_different_port_and_different_virtual_host() {
 
         String anotherVirtualHost = "test";
         String anotherUsername = "anotherUsername";
@@ -289,7 +281,7 @@ public class TunedRabbitAutoConfigurationTest {
     }
 
     @Test
-    public void should_create_2_connectionFactories_and_all_other_beans_for_same_hosts_different_port_and_same_virtual_host() {
+    void should_create_2_connectionFactories_and_all_other_beans_for_same_hosts_different_port_and_same_virtual_host() {
 
         String sameVH = "test";
         String sameUsername = "guest";
@@ -334,7 +326,7 @@ public class TunedRabbitAutoConfigurationTest {
     }
 
     @Test
-    public void should_create_2_connectionFactories_and_all_other_beans_for_different_hosts_same_port_and_same_virtual_host() {
+    void should_create_2_connectionFactories_and_all_other_beans_for_different_hosts_same_port_and_same_virtual_host() {
 
         String sameVH = "test";
         String sameUsername = "guest";
@@ -379,7 +371,7 @@ public class TunedRabbitAutoConfigurationTest {
     }
 
     @Test
-    public void should_create_2_connectionFactories_and_all_other_beans_for_same_host_same_port_and_different_virtual_host() {
+    void should_create_2_connectionFactories_and_all_other_beans_for_same_host_same_port_and_different_virtual_host() {
 
         String anotherVirtualHost = "test";
         String anotherUsername = "anotherUsername";
@@ -424,7 +416,7 @@ public class TunedRabbitAutoConfigurationTest {
     }
 
     @Test
-    public void should_create_2_connectionFactories_and_all_other_beans_for_different_hosts_different_ports_and_same_virtual_host() {
+    void should_create_2_connectionFactories_and_all_other_beans_for_different_hosts_different_ports_and_same_virtual_host() {
 
         String sameVH = "test";
         String sameUsername = "guest";
@@ -471,7 +463,7 @@ public class TunedRabbitAutoConfigurationTest {
     }
 
     @Test
-    public void should_create_only_one_connectionFactory_and_all_other_beans_for_same_host_same_port_and_same_virtual_host() {
+    void should_create_only_one_connectionFactory_and_all_other_beans_for_same_host_same_port_and_same_virtual_host() {
 
         TunedRabbitPropertiesMap rabbitCustomPropertiesMap = new TunedRabbitPropertiesMap();
         TunedRabbitProperties queuePropertiesSomeEvent = createQueueProperties(true);
@@ -501,7 +493,7 @@ public class TunedRabbitAutoConfigurationTest {
     }
 
     @Test
-    public void should_create_create_connectionFactory_without_host_and_port_when_cluster_mode() throws NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException {
+    void should_create_create_connectionFactory_without_host_and_port_when_cluster_mode() throws NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException {
 
         TunedRabbitPropertiesMap rabbitCustomPropertiesMap = new TunedRabbitPropertiesMap();
         TunedRabbitProperties queueProperties = createQueueProperties(true);
@@ -547,7 +539,8 @@ public class TunedRabbitAutoConfigurationTest {
         List<String> hosts = addresses.stream()
                 .map(a -> String.format("%s:%d", a.getHost(), a.getPort()))
                 .collect(toList());
-        assertThat(hosts, Matchers.containsInAnyOrder("127.0.0.1:5672", "127.0.0.1:6672"));
+        assertTrue(hosts.contains("127.0.0.1:5672"));
+        assertTrue(hosts.contains("127.0.0.1:6672"));
 
         assertEquals(1, context.getBeansOfType(CachingConnectionFactory.class).size());
         assertEquals(1, context.getBeansOfType(RabbitTemplate.class).size());
