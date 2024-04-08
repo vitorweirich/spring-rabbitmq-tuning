@@ -6,16 +6,10 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Exceptions checking order:
  *
- * <pre>
- * - Should be discarded
- * - Should be sent to retry
- * - Should be sent to DLQ
- * - Otherwise discard
- * </pre>
- *
- * The <code>discardWhen</code> attribute has higher precedence over <code>exceptions</code> attribute.
+ * Handle the Specific <code>TunedRabbitException</code>, to let you decida when to send to DLQ or to RETRY.
+ * Designed specifically to work with <code>BatchListeners</code>
+ * 
  */
 @Target({ ElementType.METHOD, ElementType.ANNOTATION_TYPE })
 @Retention(RetentionPolicy.RUNTIME)
