@@ -1,27 +1,26 @@
 package com.tradeshift.amqp.rabbit.handlers;
 
-import static org.junit.Assert.assertNotNull;
-import static org.mockito.MockitoAnnotations.initMocks;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.context.support.GenericApplicationContext;
 import org.springframework.test.annotation.DirtiesContext;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import com.tradeshift.amqp.autoconfigure.TunedRabbitAutoConfiguration;
 import com.tradeshift.amqp.rabbit.properties.TunedRabbitProperties;
 import com.tradeshift.amqp.rabbit.properties.TunedRabbitPropertiesMap;
 
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
-public class RabbitAdminHandlerTest {
+class RabbitAdminHandlerTest {
 
     private TunedRabbitAutoConfiguration tradeshiftRabbitAutoConfiguration;
 
@@ -33,17 +32,13 @@ public class RabbitAdminHandlerTest {
     
     private RabbitAdminHandler rabbitAdminHandler;
 
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
-
-    @Before
-    public void setup() {
-        initMocks(this);
+    @BeforeEach
+    void setup() {
         tradeshiftRabbitAutoConfiguration = new TunedRabbitAutoConfiguration(context, beanFactory);
     }
 
     @Test
-    public void should_return_default_rabbit_template() {
+    void should_return_default_rabbit_template() {
 
         TunedRabbitPropertiesMap rabbitCustomPropertiesMap = new TunedRabbitPropertiesMap();
         rabbitCustomPropertiesMap.put("some-event", createQueueProperties(true, null));
@@ -56,7 +51,7 @@ public class RabbitAdminHandlerTest {
     }
 
     @Test
-    public void should_return_rabbit_template_by_host_and_port_and_virtual_host() {
+    void should_return_rabbit_template_by_host_and_port_and_virtual_host() {
 
         TunedRabbitPropertiesMap rabbitCustomPropertiesMap = new TunedRabbitPropertiesMap();
         rabbitCustomPropertiesMap.put("some-event", createQueueProperties(true, null));
@@ -69,22 +64,19 @@ public class RabbitAdminHandlerTest {
     }
 
     @Test
-    public void should_return_no_such_bean_definition_exception_for_another_virtual_host() {
-        expectedException.expect(NoSuchBeanDefinitionException.class);
-        expectedException.expectMessage("No bean available for property test");
+    void should_return_no_such_bean_definition_exception_for_another_virtual_host() {
 
         TunedRabbitPropertiesMap rabbitCustomPropertiesMap = new TunedRabbitPropertiesMap();
         rabbitCustomPropertiesMap.put("some-event", createQueueProperties(true, "vh"));
 
         rabbitAdminHandler = new RabbitAdminHandler(context, rabbitCustomPropertiesMap);
 
-        tradeshiftRabbitAutoConfiguration.routingConnectionFactory(rabbitCustomPropertiesMap);
-
-        assertNotNull(rabbitAdminHandler.getRabbitAdmin("test"));
+        NoSuchBeanDefinitionException ex = assertThrows(NoSuchBeanDefinitionException.class, () -> rabbitAdminHandler.getRabbitAdmin("test"));
+        assertEquals("No bean named 'test' available", ex.getMessage());
     }
 
     @Test
-    public void should_return_all_rabbit_templates() {
+    void should_return_all_rabbit_templates() {
 
         TunedRabbitPropertiesMap rabbitCustomPropertiesMap = new TunedRabbitPropertiesMap();
         rabbitCustomPropertiesMap.put("some-event", createQueueProperties(true, null));

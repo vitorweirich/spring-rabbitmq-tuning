@@ -1,14 +1,14 @@
 package com.tradeshift.amqp.rabbit.properties;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-public class TunedRabbitPropertiesTest {
+class TunedRabbitPropertiesTest {
 
     @Test
-    public void should_return_retry_and_dlq_default_names_correctly() {
+    void should_return_retry_and_dlq_default_names_correctly() {
         String queueName = "queue.test.default";
         TunedRabbitProperties queueProperties = createQueueProperties(queueName, true, false);
         assertEquals(queueName + ".retry", queueProperties.getQueueRetry());
@@ -16,7 +16,7 @@ public class TunedRabbitPropertiesTest {
     }
 
     @Test
-    public void should_return_retry_and_dlq_names_correctly() {
+    void should_return_retry_and_dlq_names_correctly() {
         String queueName = "queue.test.default";
         String specificRetryName = "queue.retry";
         String specificDlqName = "queue.dlq";
@@ -28,7 +28,7 @@ public class TunedRabbitPropertiesTest {
     }
 
     @Test
-    public void should_return_retry_and_dlq_names_correctly_even_with_default_flag_enable() {
+    void should_return_retry_and_dlq_names_correctly_even_with_default_flag_enable() {
         String queueName = "queue.test.default";
         String specificRetryName = "queue.retry";
         String specificDlqName = "queue.dlq";
@@ -40,7 +40,7 @@ public class TunedRabbitPropertiesTest {
     }
 
     @Test
-    public void should_return_retry_and_dlq_names_correctly_with_snake_case() {
+    void should_return_retry_and_dlq_names_correctly_with_snake_case() {
         String queueName = "queue_test_default";
         String ex = "ex_exhange";
         TunedRabbitProperties queueProperties = createQueueProperties(ex, queueName, true, true);
@@ -50,7 +50,7 @@ public class TunedRabbitPropertiesTest {
     }
 
     @Test
-    public void should_return_retry_and_dlq_names_correctly_without_snake_case() {
+    void should_return_retry_and_dlq_names_correctly_without_snake_case() {
         String queueName = "queue_test_default";
         String ex = "ex_exhange";
         TunedRabbitProperties queueProperties = createQueueProperties(ex, queueName, true, false);
@@ -60,7 +60,7 @@ public class TunedRabbitPropertiesTest {
     }
 
     @Test
-    public void should_retry_log_message_flag_be_enabled_by_default() {
+    void should_retry_log_message_flag_be_enabled_by_default() {
         String queueName = "queue.test.default";
         TunedRabbitProperties queueProperties = createQueueProperties(queueName, true, false);
         assertTrue(queueProperties.isEnableLogs());
