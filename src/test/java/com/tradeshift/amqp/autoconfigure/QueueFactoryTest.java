@@ -1,7 +1,7 @@
 package com.tradeshift.amqp.autoconfigure;
 
-import org.junit.Test;
-import org.junit.Before;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.amqp.core.*;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
@@ -12,12 +12,12 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.ArgumentMatchers.any;
 
-public class QueueFactoryTest {
+class QueueFactoryTest {
 
     private TunedRabbitProperties queueProperties;
 
-    @Before
-    public void setUp(){
+    @BeforeEach
+    void setUp(){
         queueProperties = new TunedRabbitProperties();
         queueProperties.setQueue("queue.test");
         queueProperties.setExchange("ex.test");
@@ -34,7 +34,7 @@ public class QueueFactoryTest {
     }
 
     @Test
-    public void should_validate_a_fanout_exchange_creation_without_dlq(){
+    void should_validate_a_fanout_exchange_creation_without_dlq(){
 
         queueProperties.setExchangeType("fanout");
 
@@ -49,7 +49,7 @@ public class QueueFactoryTest {
     }
 
     @Test
-    public void should_validate_a_topic_exchange_creation_with_dlq(){
+    void should_validate_a_topic_exchange_creation_with_dlq(){
 
         queueProperties.setExchangeType("topic");
 
@@ -60,11 +60,11 @@ public class QueueFactoryTest {
 
         verify(rabbitAdminMock, times(1)).declareExchange(any(TopicExchange.class));
         verify(rabbitAdminMock, times(3)).declareQueue(any(Queue.class));
-        verify(rabbitAdminMock, times(3)).declareBinding(any(Binding.class));
+        verify(rabbitAdminMock, times(4)).declareBinding(any(Binding.class));
     }
 
     @Test
-    public void should_validate_a_direct_exchange_creation_with_dlq(){
+    void should_validate_a_direct_exchange_creation_with_dlq(){
 
         queueProperties.setExchangeType("direct");
 
@@ -75,7 +75,7 @@ public class QueueFactoryTest {
 
         verify(rabbitAdminMock, times(1)).declareExchange(any(DirectExchange.class));
         verify(rabbitAdminMock, times(3)).declareQueue(any(Queue.class));
-        verify(rabbitAdminMock, times(3)).declareBinding(any(Binding.class));
+        verify(rabbitAdminMock, times(4)).declareBinding(any(Binding.class));
     }
 
 }

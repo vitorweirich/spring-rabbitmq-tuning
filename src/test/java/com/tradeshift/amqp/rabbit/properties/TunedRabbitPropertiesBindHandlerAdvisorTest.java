@@ -1,17 +1,20 @@
 package com.tradeshift.amqp.rabbit.properties;
 
-import com.tradeshift.amqp.autoconfigure.TunedRabbitAutoConfiguration;
-import org.junit.Assert;
-import org.junit.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import org.junit.jupiter.api.Test;
 import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 
-public class TunedRabbitPropertiesBindHandlerAdvisorTest {
+import com.tradeshift.amqp.autoconfigure.TunedRabbitAutoConfiguration;
+
+class TunedRabbitPropertiesBindHandlerAdvisorTest {
 
     @Test
-    public void should_merge_with_shared_configs() {
+    void should_merge_with_shared_configs() {
         final TunedRabbitPropertiesMap tunedRabbitPropertiesMap = new SpringApplicationBuilder(SampleConfiguration.class)
                 .web(WebApplicationType.NONE)
                 .run("--spring.jmx.enabled=false",
@@ -28,18 +31,18 @@ public class TunedRabbitPropertiesBindHandlerAdvisorTest {
                 .getBean(TunedRabbitPropertiesMap.class);
 
         final TunedRabbitProperties myEvent = tunedRabbitPropertiesMap.get("my-event");
-        Assert.assertEquals("my-event.queue", myEvent.getQueue());
-        Assert.assertEquals(Integer.valueOf(5), myEvent.getMaxRetriesAttempts());
-        Assert.assertEquals("rabbit.host.intranet", myEvent.getHost());
-        Assert.assertEquals(2612, myEvent.getPort());
-        Assert.assertTrue(myEvent.isAutoCreate());
+        assertEquals("my-event.queue", myEvent.getQueue());
+        assertEquals(Integer.valueOf(5), myEvent.getMaxRetriesAttempts());
+        assertEquals("rabbit.host.intranet", myEvent.getHost());
+        assertEquals(2612, myEvent.getPort());
+        assertTrue(myEvent.isAutoCreate());
 
         final TunedRabbitProperties secondEvent = tunedRabbitPropertiesMap.get("second-event");
-        Assert.assertEquals("second-event.queue", secondEvent.getQueue());
-        Assert.assertEquals(Integer.valueOf(6), secondEvent.getMaxRetriesAttempts());
-        Assert.assertEquals("rabbit.host.internet", secondEvent.getHost());
-        Assert.assertEquals(5672, secondEvent.getPort());
-        Assert.assertTrue(secondEvent.isAutoCreate());
+        assertEquals("second-event.queue", secondEvent.getQueue());
+        assertEquals(Integer.valueOf(6), secondEvent.getMaxRetriesAttempts());
+        assertEquals("rabbit.host.internet", secondEvent.getHost());
+        assertEquals(5672, secondEvent.getPort());
+        assertTrue(secondEvent.isAutoCreate());
     }
 
     @EnableConfigurationProperties(TunedRabbitPropertiesMap.class)

@@ -1,105 +1,105 @@
 package com.tradeshift.amqp.resolvers;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import com.tradeshift.amqp.rabbit.properties.TunedRabbitProperties;
 
-public class RabbitBeanNameResolverTest {
+class RabbitBeanNameResolverTest {
 
 	@Test
-	public void should_return_the_correct_name_for_default_connection_factory_from_properties() {
+	void should_return_the_correct_name_for_default_connection_factory_from_properties() {
 		assertEquals("connectionFactoryDefaultLocalhost5672", RabbitBeanNameResolver
 				.getConnectionFactoryBeanName(createQueueProperties("localhost", 5672, null)));
 	}
 
 	@Test
-	public void should_return_the_correct_name_for_connection_factory_from_properties() {
+	void should_return_the_correct_name_for_connection_factory_from_properties() {
 		assertEquals("connectionFactoryTradeshiftLocalhost5672", RabbitBeanNameResolver
 				.getConnectionFactoryBeanName(createQueueProperties("localhost", 5672, "tradeshift")));
 	}
 
 	@Test
-	public void should_return_the_correct_name_for_default_connection_factory_from_properties_with_cluster_mode() {
+	void should_return_the_correct_name_for_default_connection_factory_from_properties_with_cluster_mode() {
 		assertEquals("connectionFactoryDefaultLocalhost5672localhost6672", RabbitBeanNameResolver
 				.getConnectionFactoryBeanName(createQueuePropertiesInClusterMode("localhost:5672,localhost:6672", null)));
 	}
 
 	@Test
-	public void should_return_the_correct_name_for_connection_factory_from_properties_with_cluster_mode() {
+	void should_return_the_correct_name_for_connection_factory_from_properties_with_cluster_mode() {
 		assertEquals("connectionFactoryTradeshiftLocalhost5672localhost6672", RabbitBeanNameResolver
 				.getConnectionFactoryBeanName(createQueuePropertiesInClusterMode("localhost:5672,localhost:6672", "tradeshift")));
 	}
 
 	@Test
-	public void should_return_the_correct_name_for_default_rabbit_admin_from_properties() {
+	void should_return_the_correct_name_for_default_rabbit_admin_from_properties() {
 		assertEquals("rabbitAdminDefaultLocalhost5672", RabbitBeanNameResolver
 				.getRabbitAdminBeanName(createQueueProperties("localhost", 5672, null)));
 	}
 
 	@Test
-	public void should_return_the_correct_name_for_rabbit_admin_from_properties() {
+	void should_return_the_correct_name_for_rabbit_admin_from_properties() {
 		assertEquals("rabbitAdminTradeshiftLocalhost5672", RabbitBeanNameResolver
 				.getRabbitAdminBeanName(createQueueProperties("localhost", 5672, "tradeshift")));
 	}
 
 	@Test
-	public void should_return_the_correct_name_for_default_rabbit_admin_from_properties_with_cluster_mode() {
+	void should_return_the_correct_name_for_default_rabbit_admin_from_properties_with_cluster_mode() {
 		assertEquals("rabbitAdminDefaultLocalhost5672localhost6672", RabbitBeanNameResolver
 				.getRabbitAdminBeanName(createQueuePropertiesInClusterMode("localhost:5672,localhost:6672", null)));
 	}
 
 	@Test
-	public void should_return_the_correct_name_for_rabbit_admin_from_properties_with_cluster_mode() {
+	void should_return_the_correct_name_for_rabbit_admin_from_properties_with_cluster_mode() {
 		assertEquals("rabbitAdminTradeshiftLocalhost5672localhost6672", RabbitBeanNameResolver
 				.getRabbitAdminBeanName(createQueuePropertiesInClusterMode("localhost:5672,localhost:6672", "tradeshift")));
 	}
 
 	@Test
-	public void should_return_the_correct_name_for_default_rabbit_template_from_properties() {
+	void should_return_the_correct_name_for_default_rabbit_template_from_properties() {
 		assertEquals("rabbitTemplateDefaultLocalhost5672", RabbitBeanNameResolver
 				.getRabbitTemplateBeanName(createQueueProperties("localhost", 5672, null)));
 	}
 
 	@Test
-	public void should_return_the_correct_name_for_rabbit_template_from_properties() {
+	void should_return_the_correct_name_for_rabbit_template_from_properties() {
 		assertEquals("rabbitTemplateTradeshiftLocalhost5672", RabbitBeanNameResolver
 				.getRabbitTemplateBeanName(createQueueProperties("localhost", 5672, "tradeshift")));
 	}
 
 	@Test
-	public void should_return_the_correct_name_for_default_rabbit_template_from_properties_with_cluster_mode() {
+	void should_return_the_correct_name_for_default_rabbit_template_from_properties_with_cluster_mode() {
 		assertEquals("rabbitTemplateDefaultLocalhost5672localhost6672", RabbitBeanNameResolver
 				.getRabbitTemplateBeanName(createQueuePropertiesInClusterMode("localhost:5672,localhost:6672", null)));
 	}
 
 	@Test
-	public void should_return_the_correct_name_for_rabbit_template_from_properties_with_cluster_mode() {
+	void should_return_the_correct_name_for_rabbit_template_from_properties_with_cluster_mode() {
 		assertEquals("rabbitTemplateTradeshiftLocalhost5672localhost6672", RabbitBeanNameResolver
 				.getRabbitTemplateBeanName(createQueuePropertiesInClusterMode("localhost:5672,localhost:6672", "tradeshift")));
 	}
 
 	@Test
-	public void should_return_the_correct_name_for_default_listener_container_factory_from_properties() {
+	void should_return_the_correct_name_for_default_listener_container_factory_from_properties() {
 		assertEquals("containerFactoryDefaultLocalhost5672", RabbitBeanNameResolver
 				.getSimpleRabbitListenerContainerFactoryBean(createQueueProperties("localhost", 5672, null)));
 	}
 
 	@Test
-	public void should_return_the_correct_name_for_listener_container_factory_from_properties() {
+	void should_return_the_correct_name_for_listener_container_factory_from_properties() {
 		assertEquals("containerFactoryTradeshiftLocalhost5672", RabbitBeanNameResolver
 				.getSimpleRabbitListenerContainerFactoryBean(createQueueProperties("localhost", 5672, "tradeshift")));
 	}
 
 	@Test
-	public void should_return_the_correct_name_for_default_container_factory_from_properties_with_cluster_mode() {
+	void should_return_the_correct_name_for_default_container_factory_from_properties_with_cluster_mode() {
 		assertEquals("containerFactoryDefaultLocalhost5672localhost6672", RabbitBeanNameResolver
 				.getSimpleRabbitListenerContainerFactoryBean(createQueuePropertiesInClusterMode("localhost:5672,localhost:6672", null)));
 	}
 
 	@Test
-	public void should_return_the_correct_name_for_container_factory_from_properties_with_cluster_mode() {
+	void should_return_the_correct_name_for_container_factory_from_properties_with_cluster_mode() {
 		assertEquals("containerFactoryTradeshiftLocalhost5672localhost6672", RabbitBeanNameResolver
 				.getSimpleRabbitListenerContainerFactoryBean(createQueuePropertiesInClusterMode("localhost:5672,localhost:6672", "tradeshift")));
 	}

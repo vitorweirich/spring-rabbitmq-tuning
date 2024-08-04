@@ -1,17 +1,16 @@
 package com.tradeshift.amqp.rabbit.handlers;
 
-import static org.junit.Assert.assertNotNull;
-import static org.mockito.MockitoAnnotations.initMocks;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mockito;
 import org.mockito.Spy;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -23,15 +22,15 @@ import org.springframework.context.annotation.AnnotationConfigApplicationContext
 import org.springframework.context.support.GenericApplicationContext;
 import org.springframework.mock.env.MockEnvironment;
 import org.springframework.test.annotation.DirtiesContext;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import com.tradeshift.amqp.autoconfigure.TunedRabbitAutoConfiguration;
 import com.tradeshift.amqp.rabbit.properties.TunedRabbitProperties;
 import com.tradeshift.amqp.rabbit.properties.TunedRabbitPropertiesMap;
 
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
-public class RabbitTemplateHandlerTest {
+class RabbitTemplateHandlerTest {
 
     private TunedRabbitAutoConfiguration tradeshiftRabbitAutoConfiguration;
 
@@ -46,17 +45,13 @@ public class RabbitTemplateHandlerTest {
     
     private RabbitTemplateHandler rabbitTemplateHandler;
 
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
-
-    @Before
-    public void setup() {
-        initMocks(this);
+    @BeforeEach
+    void setup() {
         tradeshiftRabbitAutoConfiguration = new TunedRabbitAutoConfiguration(context, beanFactory);
     }
 
     @Test
-    public void should_return_default_rabbit_template() {
+    void should_return_default_rabbit_template() {
 
         TunedRabbitPropertiesMap rabbitCustomPropertiesMap = new TunedRabbitPropertiesMap();
         rabbitCustomPropertiesMap.put("some-event", createQueueProperties(true, null));
@@ -69,9 +64,7 @@ public class RabbitTemplateHandlerTest {
     }
 
     @Test
-    public void should_return_no_such_bean_definition_exception() {
-        expectedException.expect(NoSuchBeanDefinitionException.class);
-        expectedException.expectMessage("No bean available for property test");
+    void should_return_no_such_bean_definition_exception() {
 
         TunedRabbitPropertiesMap rabbitCustomPropertiesMap = new TunedRabbitPropertiesMap();
         rabbitCustomPropertiesMap.put("some-event", createQueueProperties(true, "test"));
@@ -79,12 +72,13 @@ public class RabbitTemplateHandlerTest {
         rabbitTemplateHandler = new RabbitTemplateHandler(context, rabbitCustomPropertiesMap);
 
         tradeshiftRabbitAutoConfiguration.routingConnectionFactory(rabbitCustomPropertiesMap);
-
-        assertNotNull(rabbitTemplateHandler.getRabbitTemplate("test"));
+        
+        NoSuchBeanDefinitionException ex = assertThrows(NoSuchBeanDefinitionException.class, () -> rabbitTemplateHandler.getRabbitTemplate("test"));
+        assertEquals("No bean named 'test' available", ex.getMessage());
     }
 
     @Test
-    public void should_return_all_rabbit_templates() {
+    void should_return_all_rabbit_templates() {
 
         TunedRabbitPropertiesMap rabbitCustomPropertiesMap = new TunedRabbitPropertiesMap();
         rabbitCustomPropertiesMap.put("some-event", createQueueProperties(true, null));
@@ -99,9 +93,7 @@ public class RabbitTemplateHandlerTest {
     }
 
     @Test
-    public void should_return_exception_when_we_have_more_than_2_templates_with_autoconfig_disabled_and_without_the_correct_properties() {
-        expectedException.expect(BeanDefinitionValidationException.class);
-        expectedException.expectMessage("There are more than 1 RabbitTemplate available. You need to specify the name of the RabbitTemplate that we will use for this event");
+    void should_return_exception_when_we_have_more_than_2_templates_with_autoconfig_disabled_and_without_the_correct_properties() {
 
         disableAutoConfigurationInSpyContext();
         Map<String, RabbitTemplate> beansOfType = new HashMap<>();
@@ -116,13 +108,16 @@ public class RabbitTemplateHandlerTest {
         rabbitCustomPropertiesMap.put("some-event2", createQueueProperties(false, "test"));
 
         rabbitTemplateHandler = new RabbitTemplateHandler(spyContext, rabbitCustomPropertiesMap);
-
-        assertNotNull(rabbitTemplateHandler.getRabbitTemplate("some-event"));
-        assertNotNull(rabbitTemplateHandler.getRabbitTemplate("some-event2"));
+        
+        BeanDefinitionValidationException ex1 = assertThrows(BeanDefinitionValidationException.class, () ->  rabbitTemplateHandler.getRabbitTemplate("some-event"));
+        assertEquals("There are more than 1 RabbitTemplate available. You need to specify the name of the RabbitTemplate that we will use for this event", ex1.getMessage());
+        
+        BeanDefinitionValidationException ex2 = assertThrows(BeanDefinitionValidationException.class, () ->  rabbitTemplateHandler.getRabbitTemplate("some-event2"));
+        assertEquals("There are more than 1 RabbitTemplate available. You need to specify the name of the RabbitTemplate that we will use for this event", ex2.getMessage());
     }
 
     @Test
-    public void should_return_the_single_bean_when_we_have_the_autoconfig_disabled_and_without_the_correct_properties() {
+    void should_return_the_single_bean_when_we_have_the_autoconfig_disabled_and_without_the_correct_properties() {
         disableAutoConfigurationInSpyContext();
         Map<String, RabbitTemplate> beansOfType = new HashMap<>();
         beansOfType.put("rt1", new RabbitTemplate());
@@ -139,9 +134,7 @@ public class RabbitTemplateHandlerTest {
     }
 
     @Test
-    public void should_return_exception_when_we_have_the_autoconfig_disabled_and_without_any_rabbit_template_bean_configured() {
-        expectedException.expect(NoSuchBeanDefinitionException.class);
-        expectedException.expectMessage("No RabbitTemplate bean available. Are you sure that you want to disable the autoconfiguration?");
+    void should_return_exception_when_we_have_the_autoconfig_disabled_and_without_any_rabbit_template_bean_configured() {
 
         disableAutoConfigurationInSpyContext();
 
@@ -155,11 +148,13 @@ public class RabbitTemplateHandlerTest {
 
         rabbitTemplateHandler = new RabbitTemplateHandler(spyContext, rabbitCustomPropertiesMap);
 
-        assertNotNull(rabbitTemplateHandler.getRabbitTemplate("some-event"));
+        NoSuchBeanDefinitionException ex = assertThrows(NoSuchBeanDefinitionException.class, () ->  rabbitTemplateHandler.getRabbitTemplate("some-event"));
+        assertEquals("No bean named 'null' available: No RabbitTemplate bean available. Are you sure that you want to disable the autoconfiguration?", ex.getMessage());
+        
     }
 
     @Test
-    public void should_return_the_correct_rabbit_template_bean_when_we_have_more_than_2_templates_with_autoconfig_disabled_and_with_the_correct_properties() {
+    void should_return_the_correct_rabbit_template_bean_when_we_have_more_than_2_templates_with_autoconfig_disabled_and_with_the_correct_properties() {
         disableAutoConfigurationInSpyContext();
 
         String rabbitTemplateBean1 = "rt1";
