@@ -1,8 +1,6 @@
 package com.tradeshift.amqp.autoconfigure;
 
 import static java.util.stream.Collectors.toList;
-import static org.hamcrest.CoreMatchers.hasItems;
-import static org.hamcrest.CoreMatchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;

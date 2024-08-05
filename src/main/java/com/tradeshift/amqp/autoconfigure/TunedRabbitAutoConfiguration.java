@@ -1,6 +1,7 @@
 package com.tradeshift.amqp.autoconfigure;
 
 import com.rabbitmq.client.Channel;
+import com.tradeshift.amqp.annotation.EnableRabbitRetryAfterThrowTunedRabbitExceptionAspect;
 import com.tradeshift.amqp.annotation.EnableRabbitRetryAndDlqAspect;
 import com.tradeshift.amqp.log.TunedRabbitConstants;
 import com.tradeshift.amqp.rabbit.annotation.TunedRabbitListenerAnnotationBeanPostProcessor;
@@ -138,6 +139,12 @@ public class TunedRabbitAutoConfiguration {
     public EnableRabbitRetryAndDlqAspect enableRabbitRetryAndDlqAspect(TunedRabbitPropertiesMap rabbitCustomPropertiesMap) {
         return new EnableRabbitRetryAndDlqAspect(queueRetryComponent(rabbitCustomPropertiesMap), rabbitCustomPropertiesMap);
     }
+    
+    @Bean
+    @DependsOn("queueRetryComponent")
+    public EnableRabbitRetryAfterThrowTunedRabbitExceptionAspect enableRabbitRetryAfterThrowTunnedRabbitExceptionAspect(TunedRabbitPropertiesMap rabbitCustomPropertiesMap) {
+    	return new EnableRabbitRetryAfterThrowTunedRabbitExceptionAspect(queueRetryComponent(rabbitCustomPropertiesMap), rabbitCustomPropertiesMap);
+    }
 
     @Bean
     public RabbitComponentsFactory rabbitComponentsFactory() {
@@ -169,7 +176,7 @@ public class TunedRabbitAutoConfiguration {
         HashMap<Object, ConnectionFactory> connectionFactoryHashMap = new HashMap<>();
         rabbitCustomPropertiesMap.forEach((eventName, properties) -> {
             properties.setEventName(eventName);
-            ConnectionFactory connectionFactory = createRabbitMQArch(properties);
+            ConnectionFactory connectionFactory = createRabbitMQArch(properties, connectionFactoryHashMap);
 
             connectionFactoryHashMap.put(
                     RabbitBeanNameResolver.getConnectionFactoryBeanName(properties),
@@ -199,7 +206,7 @@ public class TunedRabbitAutoConfiguration {
         }
     }
 
-    private ConnectionFactory createRabbitMQArch(final TunedRabbitProperties property) {
+    private ConnectionFactory createRabbitMQArch(final TunedRabbitProperties property, HashMap<Object, ConnectionFactory> connectionFactoryHashMap) {
         final String virtualHost = RabbitBeanNameResolver.treatVirtualHostName(property.getVirtualHost());
 
         if (!portAndHost.contains(getTunedRabbitPropertiesCacheKey(property))) {
@@ -207,7 +214,7 @@ public class TunedRabbitAutoConfiguration {
         } else if (!virtualHosts.contains(virtualHost)) {
             applyAutoConfiguration(property);
         } else {
-        	applyAutoConfigurationOnlyForBinding(property);
+        	applyAutoConfigurationOnlyForBinding(property, connectionFactoryHashMap.get(RabbitBeanNameResolver.getConnectionFactoryBeanName(property)));
         }
 
         return (CachingConnectionFactory) applicationContext.getBean(RabbitBeanNameResolver
@@ -226,11 +233,11 @@ public class TunedRabbitAutoConfiguration {
             log.info("ConnectionFactory Bean with name {} was created for the event {} and virtual host {}",
                     connectionFactoryBeanName, property.getEventName(), virtualHost);
 
-            String listenerContainerFactoryBeanName = RabbitBeanNameResolver.getSimpleRabbitListenerContainerFactoryBean(virtualHost, property);
-            SimpleRabbitListenerContainerFactory simpleRabbitListenerContainerFactoryBeanDef = rabbitComponentsFactory.createSimpleRabbitListenerContainerFactoryBean(property, connectionFactory);
-            beanFactory.registerSingleton(listenerContainerFactoryBeanName, simpleRabbitListenerContainerFactoryBeanDef);
-            log.info("SimpleRabbitListenerContainerFactory Bean with name {} was created for the event {} and virtual host {}",
-                    listenerContainerFactoryBeanName, property.getEventName(), virtualHost);
+        	String listenerContainerFactoryBeanName = RabbitBeanNameResolver.getSimpleRabbitListenerContainerFactoryBean(virtualHost, property);
+        	SimpleRabbitListenerContainerFactory simpleRabbitListenerContainerFactoryBeanDef = rabbitComponentsFactory.createSimpleRabbitListenerContainerFactoryBean(property, connectionFactory);
+        	beanFactory.registerSingleton(listenerContainerFactoryBeanName, simpleRabbitListenerContainerFactoryBeanDef);
+        	log.info("SimpleRabbitListenerContainerFactory Bean with name {} was created for the event {} and virtual host {}",
+        			listenerContainerFactoryBeanName, property.getEventName(), virtualHost);
 
             RabbitAdmin beanDefinitionRabbitAdmin = rabbitComponentsFactory.createRabbitAdminBean(connectionFactory);
             String rabbitAdminBeanName = RabbitBeanNameResolver.getRabbitAdminBeanName(virtualHost, property);
@@ -257,13 +264,23 @@ public class TunedRabbitAutoConfiguration {
      * Apply the auto configuration to create the binding between exchange and queue.
      * It tries to recover the ConnectionFactory and RabbitAdmin from bean factory.
      */
-    private void applyAutoConfigurationOnlyForBinding(final TunedRabbitProperties properties) {
+    private void applyAutoConfigurationOnlyForBinding(final TunedRabbitProperties properties, ConnectionFactory connectionFactory) {
     	final String virtualHost = RabbitBeanNameResolver.treatVirtualHostName(properties.getVirtualHost());
 
     	String rabbitAdminBeanName = RabbitBeanNameResolver.getRabbitAdminBeanName(virtualHost, properties);
     	log.info("Getting RabbitAdmin Bean with name {} for the event {} and virtual host {}",
                 rabbitAdminBeanName, properties.getEventName(), virtualHost);
     	RabbitAdmin rabbitAdmin = beanFactory.getBean(rabbitAdminBeanName, RabbitAdmin.class);
+    	
+    	String listenerContainerFactoryBeanName = RabbitBeanNameResolver.getSimpleRabbitListenerContainerFactoryBean(virtualHost, properties);
+    	if(!beanFactory.containsBean(listenerContainerFactoryBeanName)) {
+    		final RabbitComponentsFactory rabbitComponentsFactory = rabbitComponentsFactory();
+    		SimpleRabbitListenerContainerFactory simpleRabbitListenerContainerFactoryBeanDef = rabbitComponentsFactory.createSimpleRabbitListenerContainerFactoryBean(properties, (CachingConnectionFactory) connectionFactory);
+    		beanFactory.registerSingleton(listenerContainerFactoryBeanName, simpleRabbitListenerContainerFactoryBeanDef);
+    		log.info("SimpleRabbitListenerContainerFactory Bean with name {} was created for the event {} and virtual host {}",
+    				listenerContainerFactoryBeanName, properties.getEventName(), virtualHost);
+    	}
+    	
 
         if (properties.isAutoCreate() || (properties.isAutoCreateOnlyForTest() && isTestProfile())) {
             autoCreateQueues(properties, rabbitAdmin);
