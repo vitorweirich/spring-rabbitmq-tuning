@@ -82,25 +82,43 @@ class RabbitBeanNameResolverTest {
 
 	@Test
 	void should_return_the_correct_name_for_default_listener_container_factory_from_properties() {
-		assertEquals("containerFactoryDefaultLocalhost5672", RabbitBeanNameResolver
+		assertEquals("containerFactoryDefaultLocalhost5672_1-1-250", RabbitBeanNameResolver
 				.getSimpleRabbitListenerContainerFactoryBean(createQueueProperties("localhost", 5672, null)));
 	}
 
 	@Test
 	void should_return_the_correct_name_for_listener_container_factory_from_properties() {
-		assertEquals("containerFactoryTradeshiftLocalhost5672", RabbitBeanNameResolver
-				.getSimpleRabbitListenerContainerFactoryBean(createQueueProperties("localhost", 5672, "tradeshift")));
+		TunedRabbitProperties queueProperties = createQueueProperties("localhost", 5672, "tradeshift");
+		queueProperties.setConcurrentConsumers(2);
+		queueProperties.setMaxConcurrentConsumers(8);
+		queueProperties.setPrefetchCount(1);
+		assertEquals("containerFactoryTradeshiftLocalhost5672_2-8-1", RabbitBeanNameResolver
+				.getSimpleRabbitListenerContainerFactoryBean(queueProperties));
+	}
+	
+	@Test
+	void should_return_the_correct_name_for_listener_container_factory_from_properties_with_batch() {
+		TunedRabbitProperties queueProperties = createQueueProperties("localhost", 5672, "tradeshift");
+		queueProperties.setConcurrentConsumers(2);
+		queueProperties.setMaxConcurrentConsumers(8);
+		queueProperties.setPrefetchCount(1000);
+		queueProperties.setBatchListener(true);
+		queueProperties.setConsumerBatchEnabled(true);
+		queueProperties.setBatchSize(1000);
+		queueProperties.setReceiveTimeout(1000);
+		assertEquals("containerFactoryTradeshiftLocalhost5672_2-8-1000-truetrue10001000", RabbitBeanNameResolver
+				.getSimpleRabbitListenerContainerFactoryBean(queueProperties));
 	}
 
 	@Test
 	void should_return_the_correct_name_for_default_container_factory_from_properties_with_cluster_mode() {
-		assertEquals("containerFactoryDefaultLocalhost5672localhost6672", RabbitBeanNameResolver
+		assertEquals("containerFactoryDefaultLocalhost5672localhost6672_1-1-250", RabbitBeanNameResolver
 				.getSimpleRabbitListenerContainerFactoryBean(createQueuePropertiesInClusterMode("localhost:5672,localhost:6672", null)));
 	}
 
 	@Test
 	void should_return_the_correct_name_for_container_factory_from_properties_with_cluster_mode() {
-		assertEquals("containerFactoryTradeshiftLocalhost5672localhost6672", RabbitBeanNameResolver
+		assertEquals("containerFactoryTradeshiftLocalhost5672localhost6672_1-1-250", RabbitBeanNameResolver
 				.getSimpleRabbitListenerContainerFactoryBean(createQueuePropertiesInClusterMode("localhost:5672,localhost:6672", "tradeshift")));
 	}
 

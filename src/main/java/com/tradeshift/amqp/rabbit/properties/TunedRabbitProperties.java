@@ -38,6 +38,8 @@ public class TunedRabbitProperties {
 
     private String queueDlq;
 
+    private boolean useQueueNameAsRetryRoutingKey = true;
+    
     private boolean defaultRetryDlq = true;
 
     private boolean autoCreate;
@@ -65,8 +67,20 @@ public class TunedRabbitProperties {
     private boolean enableSnakeCaseForQueuesAndExchangeNames;
 
     private String rabbitTemplateBeanName;
+    
+    private String rabbitContainerFactoryBeanName;
 
     private boolean enableLogs = true;
+    
+    private boolean consumerBatchEnabled;
+    
+    private boolean batchListener;
+    
+    private int batchSize = 1;
+    
+    private long receiveTimeout = 1000;
+    
+    private int prefetchCount = 250;
 
     public TunedRabbitProperties() {
         // Do nothing because this is a empty constructor
@@ -144,6 +158,14 @@ public class TunedRabbitProperties {
         this.queueDlq = queueDlq;
     }
 
+    public boolean isUseQueueNameAsRetryRoutingKey() {
+    	return useQueueNameAsRetryRoutingKey;
+    }
+    
+    public void setUseQueueNameAsRetryRoutingKey(final boolean useQueueNameAsRetryRoutingKey) {
+    	this.useQueueNameAsRetryRoutingKey = useQueueNameAsRetryRoutingKey;
+    }
+    
     public boolean isDefaultRetryDlq() {
         return defaultRetryDlq;
     }
@@ -209,6 +231,10 @@ public class TunedRabbitProperties {
     }
 
     public boolean isSslConnection() {
+        if (this.port == 5671) {
+          return true;
+        }
+
         return sslConnection;
     }
 
@@ -263,8 +289,20 @@ public class TunedRabbitProperties {
     public void setRabbitTemplateBeanName(final String rabbitTemplateBeanName) {
         this.rabbitTemplateBeanName = rabbitTemplateBeanName;
     }
+    
+    public String getRabbitContainerFactoryBeanName() {
+    	return rabbitContainerFactoryBeanName;
+    }
+    
+    public void setRabbitContainerFactoryBeanName(final String rabbitContainerFactoryBeanName) {
+    	this.rabbitContainerFactoryBeanName = rabbitContainerFactoryBeanName;
+    }
 
     public boolean isClusterMode() {
+        if (this.port == 5671) {
+          return true;
+        }
+
         return clusterMode;
     }
 
@@ -273,6 +311,9 @@ public class TunedRabbitProperties {
     }
 
     public String getHosts() {
+        if (this.hosts == null && this.port == 5671) {
+          return this.host;
+        }
         return hosts;
     }
 
@@ -330,5 +371,45 @@ public class TunedRabbitProperties {
 
     public void setEnableLogs(boolean enableLogs) {
         this.enableLogs = enableLogs;
+    }
+    
+    public boolean isConsumerBatchEnableds() {
+    	return consumerBatchEnabled;
+    }
+    
+    public void setConsumerBatchEnabled(boolean consumerBatchEnabled) {
+    	this.consumerBatchEnabled = consumerBatchEnabled;
+    }
+    
+    public boolean isBatchListener() {
+    	return batchListener;
+    }
+    
+    public void setBatchListener(boolean batchListener) {
+    	this.batchListener = batchListener;
+    }
+    
+    public int getBatchSize() {
+    	return batchSize;
+    }
+    
+    public void setBatchSize(int batchSize) {
+    	this.batchSize = batchSize;
+    }
+    
+    public long getReceiveTimeout() {
+    	return receiveTimeout;
+    }
+    
+    public void setReceiveTimeout(long receiveTimeout) {
+    	this.receiveTimeout = receiveTimeout;
+    }
+    
+    public int getPrefetchCount() {
+    	return prefetchCount;
+    }
+    
+    public void setPrefetchCount(int prefetchCount) {
+    	this.prefetchCount = prefetchCount;
     }
 }
