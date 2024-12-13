@@ -2,6 +2,7 @@ package com.tradeshift.amqp.annotation;
 
 import java.lang.reflect.Method;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 
@@ -103,10 +104,18 @@ public class EnableRabbitRetryAndDlqAspect {
         return exceptions.contains(exceptionThrown.getClass());
     }
 
-    private void sendMessageToRetry(ProceedingJoinPoint joinPoint, EnableRabbitRetryAndDlq annotation) {
+    @SuppressWarnings("unchecked")
+	private void sendMessageToRetry(ProceedingJoinPoint joinPoint, EnableRabbitRetryAndDlq annotation) {
         TunedRabbitProperties properties = getPropertiesByAnnotationEvent(annotation);
-        Message message = (Message) joinPoint.getArgs()[0];
-        queueRetryComponent.sendToRetryOrDlq(message, properties);
+        Object argument = joinPoint.getArgs()[0];
+        if(argument instanceof Collection) {
+        	for(Message individualMessage: (Collection<Message>) argument) {
+        		queueRetryComponent.sendToRetryOrDlq(individualMessage, properties);
+        	}
+        } else {
+        	Message message = (Message) joinPoint.getArgs()[0];
+        	queueRetryComponent.sendToRetryOrDlq(message, properties);
+        }
     }
 
     private void sendMessageToDlq(ProceedingJoinPoint joinPoint, EnableRabbitRetryAndDlq annotation) {

@@ -8,5 +8,10 @@ public class CommonJoinPointConfig {
     public void enableRabbitRetryAndDlqAnnotation() {
         // Do nothing because the whole logic are around the Pointcut annotation.
     }
+    
+    @Pointcut("@annotation(com.tradeshift.amqp.annotation.EnableRabbitRetryAfterThrowTunnedRabbitException)")
+    public void enableRabbitRetryAfterThrowTunnedRabbitException() {
+    	// Do nothing because the whole logic are around the Pointcut annotation.
+    }
 
 }
