@@ -36,15 +36,26 @@ public class QueueFactory {
             final Queue dlq = QueueBuilder.durable(properties.getQueueDlq()).build();
             final Queue retry = QueueBuilder.durable(properties.getQueueRetry())
                     .withArgument("x-dead-letter-exchange", properties.getExchange())
-                    .withArgument("x-dead-letter-routing-key", properties.getQueue())
+                    .withArgument("x-dead-letter-routing-key", getXDeadLetterRoutingKey())
                     .build();
             rabbitAdmin.declareQueue(dlq);
             rabbitAdmin.declareQueue(retry);
-            rabbitAdmin.declareBinding(generateBinding(properties.getQueue(), properties.getQueue(), properties.getExchange()));
+
+            if(properties.isUseQueueNameAsRetryRoutingKey()) {
+            	rabbitAdmin.declareBinding(generateBinding(properties.getQueue(), properties.getQueue(), properties.getExchange()));
+            }
             rabbitAdmin.declareBinding(generateBinding(properties.getQueueDlq(), properties.getQueueDlq(), properties.getExchange()));
             rabbitAdmin.declareBinding(generateBinding(properties.getQueueRetry(), properties.getQueueRetry(), properties.getExchange()));
+            
         }
     }
+
+	private String getXDeadLetterRoutingKey() {
+		if(properties.isUseQueueNameAsRetryRoutingKey()) {
+			return properties.getQueue();
+		}
+		return properties.getQueueRoutingKey();
+	}
     
     private  Binding generateBinding (String destination, String routingKey, String exchange) {
         return new Binding(

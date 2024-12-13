@@ -85,19 +85,39 @@ public class RabbitBeanNameResolver {
     // -------------------------------------- SimpleRabbitListenerContainerFactory --------------------------------------
 
     public static String getSimpleRabbitListenerContainerFactoryBeanForDefaultVirtualHost(TunedRabbitProperties customRabbitProperties) {
-        return getSimpleRabbitListenerContainerFactoryBean(null, getHostAndPortKey(customRabbitProperties));
+        return getSimpleRabbitListenerContainerFactoryBean(null, getHostAndPortKey(customRabbitProperties), customRabbitProperties);
     }
 
     public static String getSimpleRabbitListenerContainerFactoryBean(TunedRabbitProperties customRabbitProperties) {
-        return getSimpleRabbitListenerContainerFactoryBean(customRabbitProperties.getVirtualHost(), getHostAndPortKey(customRabbitProperties));
+        return getSimpleRabbitListenerContainerFactoryBean(customRabbitProperties.getVirtualHost(), getHostAndPortKey(customRabbitProperties), customRabbitProperties);
     }
 
     public static String getSimpleRabbitListenerContainerFactoryBean(String virtualHost, TunedRabbitProperties customRabbitProperties) {
-        return getSimpleRabbitListenerContainerFactoryBean(virtualHost, getHostAndPortKey(customRabbitProperties));
+        return getSimpleRabbitListenerContainerFactoryBean(virtualHost, getHostAndPortKey(customRabbitProperties), customRabbitProperties);
     }
 
-    protected static String getSimpleRabbitListenerContainerFactoryBean(String virtualHost, String hostAndPort) {
-        return getSimpleRabbitListenerContainerFactoryBean(treatVirtualHostName(virtualHost) + "_" + hostAndPort);
+    protected static String getSimpleRabbitListenerContainerFactoryBean(String virtualHost, String hostAndPort, TunedRabbitProperties customRabbitProperties) {
+        return getSimpleRabbitListenerContainerFactoryBean(treatVirtualHostName(virtualHost) + "_" + hostAndPort) 
+        		+ "_" + buildSimpleRabbitListenerContainerFactoryBeanSufixName(customRabbitProperties);
+    }
+    
+    // Cria um sufixo com as propriedades referentes ao ContainerFactory, possibilitando usar diferentes configuracoes entre eventos distintos
+    // Atualmente utiliza apenas a propriedades [concurrentConsumers, maxConcurrentConsumers], mas em uma evolucao poderia usar [batchListener, batchSize, ...]
+    protected static String buildSimpleRabbitListenerContainerFactoryBeanSufixName(TunedRabbitProperties customRabbitProperties) {
+    	StringBuilder builder = new StringBuilder();
+    	builder.append(customRabbitProperties.getConcurrentConsumers());
+    	builder.append("-");
+    	builder.append(customRabbitProperties.getMaxConcurrentConsumers());
+    	builder.append("-");
+    	builder.append(customRabbitProperties.getPrefetchCount());
+    	if(customRabbitProperties.isBatchListener() && customRabbitProperties.isConsumerBatchEnableds()) {
+    		builder.append("-");
+    		builder.append(customRabbitProperties.isBatchListener());
+    		builder.append(customRabbitProperties.isConsumerBatchEnableds());
+    		builder.append(customRabbitProperties.getBatchSize());
+    		builder.append(customRabbitProperties.getReceiveTimeout());
+    	}
+        return builder.toString();
     }
 
     protected static String getSimpleRabbitListenerContainerFactoryBean(String virtualHostHostAndPort) {

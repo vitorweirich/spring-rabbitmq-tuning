@@ -12,6 +12,7 @@ import static org.mockito.Mockito.verify;
 
 import java.lang.reflect.Field;
 import java.util.List;
+import java.util.Map;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -29,6 +30,7 @@ import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.context.support.GenericApplicationContext;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import com.rabbitmq.client.Address;
 import com.tradeshift.amqp.rabbit.properties.TunedRabbitProperties;
@@ -47,7 +49,6 @@ class TunedRabbitAutoConfigurationTest {
     @Autowired
     private ConfigurableListableBeanFactory beanFactory;
     
-
     @BeforeEach
     void setup() {
         tradeshiftRabbitAutoConfiguration = new TunedRabbitAutoConfiguration(context, beanFactory);
@@ -82,6 +83,107 @@ class TunedRabbitAutoConfigurationTest {
         assertEquals(1, context.getBeansOfType(RabbitTemplate.class).size());
         assertEquals(1, context.getBeansOfType(RabbitAdmin.class).size());
         assertEquals(1, context.getBeansOfType(SimpleRabbitListenerContainerFactory.class).size());
+    }
+    
+    @Test
+    void should_create_one_listener_container_factory_for_every_event_with_distinct_configuration() {
+
+        TunedRabbitPropertiesMap rabbitCustomPropertiesMap = new TunedRabbitPropertiesMap();
+        TunedRabbitProperties queueProperties = createQueueProperties(true);
+        rabbitCustomPropertiesMap.put("distinct-event1-a", queueProperties);
+        rabbitCustomPropertiesMap.put("distinct-event1-b", createQueueProperties(false));
+        TunedRabbitProperties distinctEvent2Properties = createQueueProperties(false);
+        distinctEvent2Properties.setPrefetchCount(1);
+        rabbitCustomPropertiesMap.put("distinct-event2-a", distinctEvent2Properties);
+        rabbitCustomPropertiesMap.put("distinct-event2-b", distinctEvent2Properties);
+        TunedRabbitProperties distinctEvent3Properties = createQueueProperties(false);
+        distinctEvent3Properties.setPrefetchCount(1);
+        distinctEvent3Properties.setConcurrentConsumers(2);
+        distinctEvent3Properties.setMaxConcurrentConsumers(2);
+        rabbitCustomPropertiesMap.put("distinct-event3-a", distinctEvent3Properties);
+        rabbitCustomPropertiesMap.put("distinct-event3-b", distinctEvent3Properties);
+        TunedRabbitProperties distinctEvent4Properties = createQueueProperties(false);
+        distinctEvent4Properties.setPrefetchCount(1);
+        distinctEvent4Properties.setConcurrentConsumers(2);
+        distinctEvent4Properties.setMaxConcurrentConsumers(4);
+        rabbitCustomPropertiesMap.put("distinct-event4-a", distinctEvent4Properties);
+        rabbitCustomPropertiesMap.put("distinct-event4-b", distinctEvent4Properties);
+        TunedRabbitProperties distinctEvent5Properties = createQueueProperties(false);
+        distinctEvent5Properties.setPrefetchCount(500);
+        distinctEvent5Properties.setBatchListener(true);
+        distinctEvent5Properties.setConsumerBatchEnabled(true);
+        distinctEvent5Properties.setBatchSize(500);
+        distinctEvent5Properties.setReceiveTimeout(1000);
+        distinctEvent5Properties.setConcurrentConsumers(2);
+        distinctEvent5Properties.setMaxConcurrentConsumers(4);
+        rabbitCustomPropertiesMap.put("distinct-event5-a", distinctEvent5Properties);
+        rabbitCustomPropertiesMap.put("distinct-event5-b", distinctEvent5Properties);
+
+        tradeshiftRabbitAutoConfiguration.routingConnectionFactory(rabbitCustomPropertiesMap);
+
+        assertEquals(5, context.getBeansOfType(SimpleRabbitListenerContainerFactory.class).size());
+        Map<String, SimpleRabbitListenerContainerFactory> rabbitListenerBeans = context.getBeansOfType(SimpleRabbitListenerContainerFactory.class);
+        
+        SimpleRabbitListenerContainerFactory distinctEvent1RabbitListener = rabbitListenerBeans.get("containerFactoryDefaultLocalhost5672_1-1-250");
+        assertEquals(1, ReflectionTestUtils.getField(distinctEvent1RabbitListener, "concurrentConsumers"));
+        assertEquals(1, ReflectionTestUtils.getField(distinctEvent1RabbitListener, "maxConcurrentConsumers"));
+        assertEquals(250, ReflectionTestUtils.getField(distinctEvent1RabbitListener, "prefetchCount"));
+        
+        SimpleRabbitListenerContainerFactory distinctEvent2RabbitListener = rabbitListenerBeans.get("containerFactoryDefaultLocalhost5672_1-1-1");
+        assertEquals(1, ReflectionTestUtils.getField(distinctEvent2RabbitListener, "concurrentConsumers"));
+        assertEquals(1, ReflectionTestUtils.getField(distinctEvent2RabbitListener, "maxConcurrentConsumers"));
+        assertEquals(1, ReflectionTestUtils.getField(distinctEvent2RabbitListener, "prefetchCount"));
+        
+        SimpleRabbitListenerContainerFactory distinctEvent3RabbitListener = rabbitListenerBeans.get("containerFactoryDefaultLocalhost5672_2-2-1");
+        assertEquals(2, ReflectionTestUtils.getField(distinctEvent3RabbitListener, "concurrentConsumers"));
+        assertEquals(2, ReflectionTestUtils.getField(distinctEvent3RabbitListener, "maxConcurrentConsumers"));
+        assertEquals(1, ReflectionTestUtils.getField(distinctEvent3RabbitListener, "prefetchCount"));
+        
+        SimpleRabbitListenerContainerFactory distinctEvent4RabbitListener = rabbitListenerBeans.get("containerFactoryDefaultLocalhost5672_2-4-1");
+        assertEquals(2, ReflectionTestUtils.getField(distinctEvent4RabbitListener, "concurrentConsumers"));
+        assertEquals(4, ReflectionTestUtils.getField(distinctEvent4RabbitListener, "maxConcurrentConsumers"));
+        assertEquals(1, ReflectionTestUtils.getField(distinctEvent4RabbitListener, "prefetchCount"));
+        
+        SimpleRabbitListenerContainerFactory distinctEvent5RabbitListener = rabbitListenerBeans.get("containerFactoryDefaultLocalhost5672_2-4-500-truetrue5001000");
+        assertEquals(2, ReflectionTestUtils.getField(distinctEvent5RabbitListener, "concurrentConsumers"));
+        assertEquals(4, ReflectionTestUtils.getField(distinctEvent5RabbitListener, "maxConcurrentConsumers"));
+        assertEquals(500, ReflectionTestUtils.getField(distinctEvent5RabbitListener, "prefetchCount"));
+        assertEquals(1000L, ReflectionTestUtils.getField(distinctEvent5RabbitListener, "receiveTimeout"));
+        assertEquals(500, ReflectionTestUtils.getField(distinctEvent5RabbitListener, "batchSize"));
+        assertTrue((Boolean) ReflectionTestUtils.getField(distinctEvent5RabbitListener, "consumerBatchEnabled"));
+        assertTrue((Boolean) ReflectionTestUtils.getField(distinctEvent5RabbitListener, "batchListener"));
+    }
+    
+    @Test
+    void should_create_all_beans_for_rabbitmq_architecture_even_when_container_factory_bean_name_is_provided() {
+
+        TunedRabbitPropertiesMap rabbitCustomPropertiesMap = new TunedRabbitPropertiesMap();
+        TunedRabbitProperties queueProperties = createQueueProperties(true);
+        queueProperties.setRabbitContainerFactoryBeanName("some-container-factory-bean-name");
+        rabbitCustomPropertiesMap.put("some-event", queueProperties);
+
+        tradeshiftRabbitAutoConfiguration.routingConnectionFactory(rabbitCustomPropertiesMap);
+
+        CachingConnectionFactory connectionFactory = (CachingConnectionFactory) context.getBean(RabbitBeanNameResolver.getConnectionFactoryBeanNameForDefaultVirtualHost(queueProperties));
+        RabbitTemplate rabbitTemplate = (RabbitTemplate) context.getBean(RabbitBeanNameResolver.getRabbitTemplateBeanNameForDefaultVirtualHost(queueProperties));
+        RabbitAdmin rabbitAdmin = (RabbitAdmin) context.getBean(RabbitBeanNameResolver.getRabbitAdminBeanNameForDefaultVirtualHost(queueProperties));
+        SimpleRabbitListenerContainerFactory simpleRabbitListenerContainerFactory =
+        		(SimpleRabbitListenerContainerFactory) context.getBean(RabbitBeanNameResolver.getSimpleRabbitListenerContainerFactoryBeanForDefaultVirtualHost(queueProperties));
+
+        assertNotNull(connectionFactory);
+        assertNotNull(rabbitTemplate);
+        assertNotNull(rabbitAdmin);
+
+        assertEquals("/", connectionFactory.getVirtualHost());
+        assertEquals("localhost", connectionFactory.getHost());
+        assertEquals(5672, connectionFactory.getPort());
+        assertEquals("guest", connectionFactory.getUsername());
+
+        assertEquals(1, context.getBeansOfType(CachingConnectionFactory.class).size());
+        assertEquals(1, context.getBeansOfType(RabbitTemplate.class).size());
+        assertEquals(1, context.getBeansOfType(RabbitAdmin.class).size());
+        
+        assertNotNull(simpleRabbitListenerContainerFactory);
     }
 
     @Test
@@ -133,13 +235,11 @@ class TunedRabbitAutoConfigurationTest {
 
     @Test
     void should_return_an_excp_because_there_are_2_primaries_definitions() {
-
         TunedRabbitPropertiesMap rabbitCustomPropertiesMap = new TunedRabbitPropertiesMap();
         rabbitCustomPropertiesMap.put("some-event", createQueueProperties(true));
         rabbitCustomPropertiesMap.put("some-event2", createQueueProperties(true));
 
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () -> tradeshiftRabbitAutoConfiguration.routingConnectionFactory(rabbitCustomPropertiesMap));
-    
         assertEquals("Only one primary RabbitMQ architecture is allowed!", ex.getMessage());
     }
 
@@ -243,7 +343,7 @@ class TunedRabbitAutoConfigurationTest {
         String sameHost = "localhost";
 
         TunedRabbitPropertiesMap rabbitCustomPropertiesMap = new TunedRabbitPropertiesMap();
-        TunedRabbitProperties queuePropertiesSomeEvent = createQueueProperties(true, null, "guest", false, sameHost, 5671);
+        TunedRabbitProperties queuePropertiesSomeEvent = createQueueProperties(true, null, "guest", false, sameHost, 5673);
         rabbitCustomPropertiesMap.put("some-event", queuePropertiesSomeEvent);
 
         TunedRabbitProperties queuePropertiesAnotherEvent = createQueueProperties(false, anotherVirtualHost, anotherUsername, false, sameHost, 5672);
@@ -266,7 +366,7 @@ class TunedRabbitAutoConfigurationTest {
 
         assertEquals("/", connectionFactoryForDefaultVH.getVirtualHost());
         assertEquals("localhost", connectionFactoryForDefaultVH.getHost());
-        assertEquals(5671, connectionFactoryForDefaultVH.getPort());
+        assertEquals(5673, connectionFactoryForDefaultVH.getPort());
         assertEquals("guest", connectionFactoryForDefaultVH.getUsername());
 
         assertEquals(anotherVirtualHost, connectionFactoryForAnotherVH.getVirtualHost());
@@ -288,7 +388,7 @@ class TunedRabbitAutoConfigurationTest {
         String sameHost = "localhost";
 
         TunedRabbitPropertiesMap rabbitCustomPropertiesMap = new TunedRabbitPropertiesMap();
-        TunedRabbitProperties queuePropertiesSomeEvent = createQueueProperties(true, sameVH, sameUsername, false, sameHost, 5671);
+        TunedRabbitProperties queuePropertiesSomeEvent = createQueueProperties(true, sameVH, sameUsername, false, sameHost, 5673);
         rabbitCustomPropertiesMap.put("some-event", queuePropertiesSomeEvent);
 
         TunedRabbitProperties queuePropertiesAnotherEvent = createQueueProperties(false, sameVH, sameUsername, false, sameHost, 5672);
@@ -311,7 +411,7 @@ class TunedRabbitAutoConfigurationTest {
 
         assertEquals(sameVH, connectionFactoryForDefaultVH.getVirtualHost());
         assertEquals(sameHost, connectionFactoryForDefaultVH.getHost());
-        assertEquals(5671, connectionFactoryForDefaultVH.getPort());
+        assertEquals(5673, connectionFactoryForDefaultVH.getPort());
         assertEquals(sameUsername, connectionFactoryForDefaultVH.getUsername());
 
         assertEquals(sameVH, connectionFactoryForAnotherVH.getVirtualHost());
@@ -421,7 +521,7 @@ class TunedRabbitAutoConfigurationTest {
         String sameVH = "test";
         String sameUsername = "guest";
         String anotherHost = "anotherHost";
-        int anotherPort = 5671;
+        int anotherPort = 5673;
 
         TunedRabbitPropertiesMap rabbitCustomPropertiesMap = new TunedRabbitPropertiesMap();
 
@@ -513,7 +613,6 @@ class TunedRabbitAutoConfigurationTest {
         verify(spyQueueProperties, atLeast(4)).isClusterMode();
         verify(spyQueueProperties, atLeast(4)).getHosts();
         verify(spyQueueProperties, never()).getHost();
-        verify(spyQueueProperties, never()).getPort();
 
         CachingConnectionFactory connectionFactory = (CachingConnectionFactory) context.getBean(RabbitBeanNameResolver.getConnectionFactoryBeanNameForDefaultVirtualHost(queueProperties));
         RabbitTemplate rabbitTemplate = (RabbitTemplate) context.getBean(RabbitBeanNameResolver.getRabbitTemplateBeanNameForDefaultVirtualHost(queueProperties));
@@ -539,13 +638,44 @@ class TunedRabbitAutoConfigurationTest {
         List<String> hosts = addresses.stream()
                 .map(a -> String.format("%s:%d", a.getHost(), a.getPort()))
                 .collect(toList());
-        assertTrue(hosts.contains("127.0.0.1:5672"));
-        assertTrue(hosts.contains("127.0.0.1:6672"));
+        
+        assertTrue(hosts.containsAll(List.of("127.0.0.1:5672", "127.0.0.1:6672")));
 
         assertEquals(1, context.getBeansOfType(CachingConnectionFactory.class).size());
         assertEquals(1, context.getBeansOfType(RabbitTemplate.class).size());
         assertEquals(1, context.getBeansOfType(RabbitAdmin.class).size());
         assertEquals(1, context.getBeansOfType(SimpleRabbitListenerContainerFactory.class).size());
+    }
+
+    @Test
+    void should_create_ssl_connectionFactory_and_all_other_beans_for_same_host_same_port_and_same_virtual_host() {
+
+      String sameVH = "test";
+      String sameUsername = "guest";
+      String sameHost = "localhost";
+
+      TunedRabbitPropertiesMap rabbitCustomPropertiesMap = new TunedRabbitPropertiesMap();
+      TunedRabbitProperties queuePropertiesSomeEvent = createQueueProperties(true, sameVH, sameUsername, false, sameHost, 5671);
+      rabbitCustomPropertiesMap.put("some-event", queuePropertiesSomeEvent);
+
+      tradeshiftRabbitAutoConfiguration.routingConnectionFactory(rabbitCustomPropertiesMap);
+
+      CachingConnectionFactory connectionFactoryForDefaultVH = (CachingConnectionFactory) context.getBean(RabbitBeanNameResolver.getConnectionFactoryBeanName(queuePropertiesSomeEvent));
+
+      assertNotNull(connectionFactoryForDefaultVH);
+      assertNotNull(context.getBean(RabbitBeanNameResolver.getRabbitTemplateBeanName(queuePropertiesSomeEvent)));
+      assertNotNull(context.getBean(RabbitBeanNameResolver.getRabbitAdminBeanName(queuePropertiesSomeEvent)));
+      assertNotNull(context.getBean(RabbitBeanNameResolver.getSimpleRabbitListenerContainerFactoryBean(queuePropertiesSomeEvent)));
+
+      assertEquals(sameVH, connectionFactoryForDefaultVH.getVirtualHost());
+      assertEquals(null, connectionFactoryForDefaultVH.getHost());
+      assertEquals(0, connectionFactoryForDefaultVH.getPort());
+      assertEquals(sameUsername, connectionFactoryForDefaultVH.getUsername());
+
+      assertEquals(1, context.getBeansOfType(CachingConnectionFactory.class).size());
+      assertEquals(1, context.getBeansOfType(RabbitTemplate.class).size());
+      assertEquals(1, context.getBeansOfType(RabbitAdmin.class).size());
+      assertEquals(1, context.getBeansOfType(SimpleRabbitListenerContainerFactory.class).size());
     }
     
     private TunedRabbitProperties createQueueProperties(boolean primary) {

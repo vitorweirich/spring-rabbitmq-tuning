@@ -18,11 +18,9 @@ import org.springframework.amqp.support.converter.SimpleMessageConverter;
 
 import com.rabbitmq.client.DefaultSaslConfig;
 import com.tradeshift.amqp.rabbit.properties.TunedRabbitProperties;
-import com.tradeshift.amqp.ssl.TLSContextUtil;
 
 public class RabbitComponentsFactory {
 	private static final Logger log = LoggerFactory.getLogger(RabbitComponentsFactory.class);
-
 
 	public RabbitAdmin createRabbitAdminBean(CachingConnectionFactory connectionFactory) {
 		return new RabbitAdmin(connectionFactory);
@@ -51,13 +49,20 @@ public class RabbitComponentsFactory {
 	public CachingConnectionFactory createCachingConnectionFactory(final TunedRabbitProperties property, String virtualHost) {
 		try {
 			com.rabbitmq.client.ConnectionFactory factory = new com.rabbitmq.client.ConnectionFactory();
+			if (property.getPort() == 5671) {
+				property.setSslConnection(true);
+		    }
+
 			if (!property.isSslConnection()) {
 				factory.setUsername(property.getUsername());
 				factory.setPassword(property.getPassword());
 			} else {
-				factory.setSaslConfig(DefaultSaslConfig.EXTERNAL);
-				factory.useSslProtocol(TLSContextUtil.tls12ContextFromPKCS12(property.getTlsKeystoreLocation().getInputStream(),
-						property.getTlsKeystorePassword().toCharArray()));
+				factory.setUsername(property.getUsername());
+				factory.setPassword(property.getPassword());
+				factory.setSaslConfig(DefaultSaslConfig.PLAIN);
+				factory.useSslProtocol("TLSv1.2");
+				property.setClusterMode(true);
+				property.setHosts(property.getHost());
 			}
 			factory.setAutomaticRecoveryEnabled(property.isAutomaticRecovery());
 			Optional.ofNullable(property.getVirtualHost()).ifPresent(factory::setVirtualHost);
@@ -87,6 +92,13 @@ public class RabbitComponentsFactory {
 		simpleRabbitListenerContainerFactory.setConnectionFactory(connectionFactory);
 		simpleRabbitListenerContainerFactory.setConcurrentConsumers(property.getConcurrentConsumers());
 		simpleRabbitListenerContainerFactory.setMaxConcurrentConsumers(property.getMaxConcurrentConsumers());
+		simpleRabbitListenerContainerFactory.setPrefetchCount(property.getPrefetchCount());
+		if(property.isBatchListener() && property.isConsumerBatchEnableds()) {
+			simpleRabbitListenerContainerFactory.setBatchListener(true);
+			simpleRabbitListenerContainerFactory.setConsumerBatchEnabled(true);
+			simpleRabbitListenerContainerFactory.setBatchSize(property.getBatchSize());
+			simpleRabbitListenerContainerFactory.setReceiveTimeout(property.getReceiveTimeout());
+		}
 		if (property.isEnableJsonMessageConverter()) {
 			simpleRabbitListenerContainerFactory.setMessageConverter(createJackson2MessageConverter());
 		} else {
